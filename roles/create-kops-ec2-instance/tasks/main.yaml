@@ -3,14 +3,14 @@
   ec2_key:
     name: kops-key
     region: "{{region}}"
-  register: kops-key_out
+  register: kops_key_out
 
 - name: Save private key into file kops-key.pem
   copy:
-    content: "{{kops-key_out.private_key}}"
+    content: "{{kops_key_out.private_key}}"
     dest: "./kops-key.pem"
     mode: 0600
-  when: kops-key_out.changed
+  when: kops_key_out.changed
 
 - name: Create security group
   ec2_group:

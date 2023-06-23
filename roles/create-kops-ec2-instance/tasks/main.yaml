@@ -1,0 +1,48 @@
+---
+- name: Create ec2 key
+  ec2_key:
+    name: kops-key
+    region: "{{region}}"
+  register: kops-key_out
+
+- name: Save private key into file kops-key.pem
+  copy:
+    content: "{{kops-key_out.private_key}}"
+    dest: "./kops-key.pem"
+    mode: 0600
+  when: kops-key_out.changed
+
+- name: Create security group
+  ec2_group:
+    name: kops-sg
+    description: Allow port 22 from My IP
+    region: "{{region}}"
+    vpc_id: "{{vpcid}}"
+    purge_rules: no
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: "{{MYIP}}"
+  register: kopsSG_out
+
+- name: Create kops host
+  ec2:
+    key_name: kops-key
+    region: "{{region}}"
+    instance_type: t2.micro
+    image: "{{kops_ami}}"
+    wait: yes
+    wait_timeout: 300
+    instance_tags:
+      Name: "{{tag_instance_name}}"
+      Project: "{{tag_project}}"
+      Owner: "{{tag_owner}}"
+    exact_count: 1
+    count_tag:
+      Name: "{{tag_instance_name}}"
+      Project: "{{tag_project}}"
+      Owner: "{{tag_owner}}"
+    group_id: "{{kopsSG_out.group_id}}"
+    vpc_subnet_id: "{{subnetid}}"
+  register: kopsHost_out
